@@ -29,6 +29,7 @@ export default function Signup() {
       const json = await response.json();
       console.log(json);
       if (json.success) {
+        alert('Email sent successfully! Please check your inbox.');
         navigate('/login');
       } else {
         alert('Enter Valid Credentials');
@@ -38,6 +39,7 @@ export default function Signup() {
       alert('Something went wrong');
     }
   };
+
 
   const handleChange = (e) => {
     setCredentials((prevCredentials) => ({
