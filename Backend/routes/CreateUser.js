@@ -130,66 +130,43 @@ router.get('/verify-email/:token', async (req, res) => {
   }
 });
 
-// Resend Verification Link
-router.post('/resend-verification', async (req, res) => {
-  const { email } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(400).json({ errors: 'User not found' });
+async function sendVerificationEmail(user, host, isResend = false) {
+    try {
+      // Generate verification token
+      const token = crypto.randomBytes(20).toString('hex');
+  
+      // Save or update the token in the database
+      let tokenData = await Token.findOne({ userId: user._id });
+  
+      if (tokenData) {
+        tokenData.token = token;
+        await tokenData.save();
+      } else {
+        tokenData = await Token.create({
+          userId: user._id,
+          token: token,
+        });
+      }
+  
+      // Construct the verification link
+      const verificationLink = `${host}/verify-email/${token}`;
+  
+      // Email content
+      let emailContent = {
+        to: user.email,
+        subject: 'Email Verification',
+        text: `Please click on the following link to verify your email: ${verificationLink}`,
+        html: `<p>Please click <a href="${verificationLink}" style="color: blue;">here</a> to verify your email.</p>`,
+      };
+  
+  
+      // Send the verification email
+      await sendEmail(emailContent);
+  
+      console.log('Verification email sent successfully');
+    } catch (error) {
+      console.error('Error sending verification email:', error);
     }
-
-    if (user.isVerified) {
-      return res.status(400).json({ errors: 'Email is already verified' });
-    }
-
-    await sendVerificationEmail(user, req.get('host')); // Send the verification email
-
-    res.json({ success: true });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ errors: 'Server error' });
   }
-});
-
-async function sendVerificationEmail(user, host) {
-  try {
-    // Generate verification token
-    const token = crypto.randomBytes(20).toString('hex');
-
-    // Save or update the token in the database
-    let tokenData = await Token.findOne({ userId: user._id });
-
-    if (tokenData) {
-      tokenData.token = token;
-      await tokenData.save();
-    } else {
-      tokenData = await Token.create({
-        userId: user._id,
-        token: token,
-      });
-    }
-
-    // Construct the verification link
-    const verificationLink = `${host}/verify-email/${token}`;
-
-    // Email content
-    const emailContent = {
-      to: user.email,
-      subject: 'Email Verification',
-      text: `Please click on the following link to verify your email: ${verificationLink}`,
-      html: `<p>Please click <a href="${verificationLink}" style="color: blue;">here</a> to verify your email.</p>`,
-    };
-
-    // Send the verification email
-    await sendEmail(emailContent);
-
-    console.log('Verification email sent successfully');
-  } catch (error) {
-    console.error('Error sending verification email:', error);
-  }
-}
-
+  
 module.exports = router;
