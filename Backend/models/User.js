@@ -31,9 +31,10 @@ const UserSchema = new Schema({
         type: String,
         required: true
     },
-    verified:{
-        type: Boolean,
-        default: false,
+    isVerified: { 
+        type: Boolean, 
+        required: true,
+        default: false 
     },
     date:{
         type: Date,
